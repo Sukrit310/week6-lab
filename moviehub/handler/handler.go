@@ -7,6 +7,7 @@ import (
     "strconv"
 	"moviehub/auth"
     "moviehub/store"
+    "errors"
 )
 
 type Handler struct {
@@ -58,4 +59,22 @@ func (h *Handler) ListReviews(w http.ResponseWriter, r *http.Request) {
         return
     }
     writeJSON(w, http.StatusOK, map[string]any{"items": items})
+}
+
+func (h *Handler) GetMovie(w http.ResponseWriter, r *http.Request) {
+    id, ok := pathID(r, "id")
+    if !ok {
+        writeError(w, http.StatusBadRequest, "BAD_ID", "เลขหนังต้องเป็นตัวเลข")
+        return
+    }
+    m, err := h.Store.GetMovie(r.Context(), id)
+    if errors.Is(err, store.ErrNotFound) {
+        writeError(w, http.StatusNotFound, "MOVIE_NOT_FOUND", "ไม่พบหนังเรื่องนี้")
+        return
+    }
+    if err != nil {
+        internal(w, err)
+        return
+    }
+    writeJSON(w, http.StatusOK, m)
 }
